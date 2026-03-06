@@ -6,15 +6,20 @@ function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<MidoriEngine | null>(null);
 
-  useEffect(() => {
-    if (canvasRef.current && !engineRef.current) {
-      // 1. Initialize the engine
-      engineRef.current = new MidoriEngine(canvasRef.current);
-      
-      // 2. Setup High DPI
-      engineRef.current.setupHighDPI();
-    }
-  }, []);
+useEffect(() => {
+  if (canvasRef.current && !engineRef.current) {
+    const engine = new MidoriEngine(canvasRef.current);
+    engine.setupHighDPI();
+
+    // Attach a listener that React can use
+    engine.onPointAdded = (point, allPoints) => {
+      console.log("New point in React:", point);
+       // Here you could update a React state, calculate a score, etc.
+    };
+
+    engineRef.current = engine;
+  }
+}, []);
 
   return (
     <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -23,8 +28,8 @@ function App() {
         ref={canvasRef} 
         style={{ 
           border: '1px solid black', 
-          width: '800px', // Display size
-          height: '600px', 
+          width: '400px', // Display size
+          height: '300px', 
           touchAction: 'none' // CRITICAL: prevents browser scrolling while drawing
         }} 
       />

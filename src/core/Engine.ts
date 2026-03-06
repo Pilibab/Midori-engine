@@ -1,4 +1,4 @@
-import type { Point, Stroke } from "../types.ts";
+import type { Point } from "../types.ts";
 
 export class MidoriEngine {
     // provides a way to manipulate the properties and method of canvas 
@@ -8,7 +8,6 @@ export class MidoriEngine {
     private ctx: CanvasRenderingContext2D;
 
     private isDrawing : boolean = false; 
-    private points:  Stroke[] = []; 
 
     // stores the stroke being drawn by user to perform comparison
     private currentStroke: Point[] = [];
@@ -21,6 +20,8 @@ export class MidoriEngine {
         this.init();
     }
 
+    public onPointAdded?: (point: Point, allPoints: Point[]) => void;
+
     private init() {
         this.canvas.addEventListener("pointerdown", (e) => this.startDrawing(e));
         this.canvas.addEventListener("pointermove", (e) => this.draw(e));
@@ -29,7 +30,7 @@ export class MidoriEngine {
 
     private startDrawing(e : PointerEvent) {
         this.isDrawing = true;
-        const coords= this.getCoords(e);
+        const coords= this.getCoords(e);        
 
         // if we havent set anchor 
         this.ctx.beginPath();
@@ -47,6 +48,12 @@ export class MidoriEngine {
 
         // ADD TO DATA STREAM
         this.currentStroke.push(currentPoint);
+
+        // Call the callback if it exists
+        if (this.onPointAdded) {
+            this.onPointAdded(currentPoint, this.currentStroke);
+        }
+        
 
         // Store the point relative to the anchor 
         // will be used to calculate the speed 

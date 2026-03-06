@@ -1,3 +1,5 @@
+import type { Point, Stroke } from "../types.ts";
+
 export class MidoriEngine {
     // provides a way to manipulate the properties and method of canvas 
     private canvas: HTMLCanvasElement;
@@ -5,15 +7,54 @@ export class MidoriEngine {
     //  provides the 2D rendering context for the drawing surface of a <canvas> element
     private ctx: CanvasRenderingContext2D;
 
+    private isDrawing : boolean = false; 
+    private points:  Stroke[] = []; 
+    private anchor: Point | null = null;
 
     constructor(canvas: HTMLCanvasElement) {
-        this.canvas = canvas
+        this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
         this.init();
     }
 
     private init() {
+        this.canvas.addEventListener("pointerdown", (e) => this.startDrawing);
+        this.canvas.addEventListener("pointermove", (e) => this.draw);
+        window.addEventListener("pointerup", (e) => this.stopDrawing);
+    }
 
+    private startDrawing(e : PointerEvent) {
+
+        if (!this.isDrawing || !this.anchor) return;
+
+        this.isDrawing = true;
+        const coords= this.getCoords(e);
+
+        // if we havent set anchor 
+        this.ctx.beginPath();
+        this.ctx.moveTo(coords.x, coords.y);
+
+        this.anchor = coords;
+    }
+
+    private draw (e : PointerEvent) {
+        if (!this.isDrawing) return;
+    }
+
+    private stopDrawing(e : PointerEvent) {
+
+    }
+
+    private getCoords(e : PointerEvent) : Point {
+        // get screen size 
+        const {left, top} = this.canvas.getBoundingClientRect()
+        
+        return {
+            x: e.clientX - left,
+            y: e.clientY - top,
+            pressure: e.pressure,
+            timestamp: e.timeStamp
+        }
     }
 
     setupHighDPI() {
@@ -72,4 +113,6 @@ export class MidoriEngine {
         // Instead of enlarging the buttons, we increase the number of buttons (pixels) in the canvas 
         // so each screen pixel can display a real pixel from the buffer.
     }
+
+
 }

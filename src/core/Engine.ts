@@ -22,9 +22,9 @@ export class MidoriEngine {
     }
 
     private init() {
-this.canvas.addEventListener("pointerdown", (e) => this.startDrawing(e));
-    this.canvas.addEventListener("pointermove", (e) => this.draw(e));
-    window.addEventListener("pointerup", () => this.stopDrawing());
+        this.canvas.addEventListener("pointerdown", (e) => this.startDrawing(e));
+        this.canvas.addEventListener("pointermove", (e) => this.draw(e));
+        window.addEventListener("pointerup", () => this.stopDrawing());
     }
 
     private startDrawing(e : PointerEvent) {

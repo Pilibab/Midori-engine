@@ -9,24 +9,25 @@ export class MidoriEngine {
 
     private isDrawing : boolean = false; 
     private points:  Stroke[] = []; 
+
+    // stores the stroke being drawn by user to perform comparison
+    private currentStroke: Point[] = [];
     private anchor: Point | null = null;
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
+        this.currentStroke; 
         this.init();
     }
 
     private init() {
-        this.canvas.addEventListener("pointerdown", (e) => this.startDrawing);
-        this.canvas.addEventListener("pointermove", (e) => this.draw);
-        window.addEventListener("pointerup", (e) => this.stopDrawing);
+this.canvas.addEventListener("pointerdown", (e) => this.startDrawing(e));
+    this.canvas.addEventListener("pointermove", (e) => this.draw(e));
+    window.addEventListener("pointerup", () => this.stopDrawing());
     }
 
     private startDrawing(e : PointerEvent) {
-
-        if (!this.isDrawing || !this.anchor) return;
-
         this.isDrawing = true;
         const coords= this.getCoords(e);
 
@@ -34,15 +35,51 @@ export class MidoriEngine {
         this.ctx.beginPath();
         this.ctx.moveTo(coords.x, coords.y);
 
+        this.currentStroke = [coords];
+
         this.anchor = coords;
     }
 
     private draw (e : PointerEvent) {
-        if (!this.isDrawing) return;
+        if (!this.isDrawing || !this.anchor) return;
+
+        const currentPoint = this.getCoords(e);
+
+        // ADD TO DATA STREAM
+        this.currentStroke.push(currentPoint);
+
+        // Store the point relative to the anchor 
+        // will be used to calculate the speed 
+        const relativePoint: Point = {
+            x: currentPoint.x - this.anchor.x,
+            y: currentPoint.y - this.anchor.y,
+            pressure: currentPoint.pressure,
+            timestamp: currentPoint.timestamp
+        };
+        
+
+        // todo: this is where math is added 
+
+
+        // todo: logic for changing style based on color
+
+
+        // Draw the segment from the LAST point (anchor) to the CURRENT point
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.anchor.x, this.anchor.y);
+        this.ctx.lineTo(currentPoint.x, currentPoint.y);
+        this.ctx.stroke();
+
+
+        // Append to your current stroke collection
+        // Note: You'll need a way to track the current active stroke!
+        
+        // Update the anchor for the NEXT move event (The Leapfrog)
+        this.anchor = currentPoint;
     }
 
-    private stopDrawing(e : PointerEvent) {
-
+    private stopDrawing() {
+        this.isDrawing = false;
     }
 
     private getCoords(e : PointerEvent) : Point {

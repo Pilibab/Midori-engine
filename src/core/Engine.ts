@@ -1,4 +1,4 @@
-import type { Point } from "../types.ts";
+import type { Point, StrokeComponent } from "../types.ts";
 
 export class MidoriEngine {
     // provides a way to manipulate the properties and method of canvas 
@@ -12,6 +12,7 @@ export class MidoriEngine {
     // stores the stroke being drawn by user to perform comparison
     private currentStroke: Point[] = [];
     private anchor: Point | null = null;
+    private svgMOdel: StrokeComponent | null = null; 
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -101,7 +102,7 @@ export class MidoriEngine {
         }
     }
 
-    setupHighDPI() {
+    public setupHighDPI() {
         const devicePxRatio = window.devicePixelRatio || 1;
 
         // getBoundingClientRect() returns the size of the element
@@ -158,5 +159,12 @@ export class MidoriEngine {
         // so each screen pixel can display a real pixel from the buffer.
     }
 
+    public setTargetModel(model : StrokeComponent){
+        /**
+         * recieves an svg path that will be used to compare the users stroke 
+         */
 
+        // save the svg model to local variable 
+        this.svgMOdel = model;
+    }
 }

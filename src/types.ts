@@ -18,3 +18,8 @@ export interface StrokeComponent {
     original: string | null
     strokes: Stroke[]
 }
+
+export interface pointsVal {
+    x: number;
+    y: number;
+}

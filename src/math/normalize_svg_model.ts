@@ -1,16 +1,11 @@
-
-import { sampleDataKanji } from "../test-data/sample-kanji.ts";
-import type { StrokeComponent } from "../types.ts";
+import type { pointsVal, StrokeComponent } from "../types.ts";
 import { extract_svg_path } from "../helper/extract_svg_path.ts";
 
 import { svgPathProperties } from "svg-path-properties";
 
-interface pointsVal {
-    x: number;
-    y: number;
-}
-const normalize_model = (svg: StrokeComponent[], numPoints: number = 100) => {
-    // numPoints tells us how many points are we going to use for the full kanji
+
+export const normalize_model = (svg: StrokeComponent[], numPoints: number = 100) => {
+    // numPoints tells us how many points are we going to use for each stroke in a kanji
     // the higher the number the more accurate
     // think of using points to graph something
     const paths = extract_svg_path(svg);

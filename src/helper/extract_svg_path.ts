@@ -1,4 +1,4 @@
-import { StrokeComponent } from "@/types"
+import type { StrokeComponent } from "../types.ts"
 
 export const extract_svg_path = (svg: StrokeComponent[]) => {
     const strokeStr = svg.map((data, _)=>{

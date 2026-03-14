@@ -9,14 +9,14 @@ export const normalize_model = (svg: StrokeComponent[], numPoints: number = 100)
     // the higher the number the more accurate
     // think of using points to graph something
     const paths = extract_svg_path(svg);
-    const points: pointsVal[] = [];
-    
-    const properties = paths.map((path, _) => {
-        // extracts the svg
+
+    return paths.map((path, _) => {
+        // extracts the stroke
         const svgAtt = new svgPathProperties(path);
-
+        const points: pointsVal[] = [];
         const totalLength = svgAtt.getTotalLength();
-
+        
+        // extract points for current stroke 
         for (let i = 0; i < numPoints; i++) {
             const frac = i / numPoints;
 
@@ -29,6 +29,5 @@ export const normalize_model = (svg: StrokeComponent[], numPoints: number = 100)
             });
         }
     });
-    return points;
 }
 

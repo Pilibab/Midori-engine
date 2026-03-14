@@ -29,10 +29,6 @@ export const normalize_model = (svg: StrokeComponent[], numPoints: number = 100)
             });
         }
     });
-    console.log(points);
     return points;
 }
-
-// normalize_model(sampleDataKanji.stroke_components)
-
 

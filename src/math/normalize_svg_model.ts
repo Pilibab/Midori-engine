@@ -2,7 +2,7 @@ import type { pointsVal, StrokeComponent } from "../types.ts";
 import { extract_svg_path } from "../helper/extract_svg_path.ts";
 
 import { svgPathProperties } from "svg-path-properties";
-import { Component } from "react";
+import { sampleDataKanji } from "../test-data/sample-kanji.ts";
 
 
 export const normalize_model = (svg: StrokeComponent[], numPoints: number = 100) => {
@@ -11,9 +11,11 @@ export const normalize_model = (svg: StrokeComponent[], numPoints: number = 100)
     // think of using points to graph something
     const paths = extract_svg_path(svg);
 
-    return paths.map((component, _) => (
-        component.map((path, _) => {
-                    // extracts the stroke
+    // ? why does using flatMap here causes an error SyntaxError: Expression expected after the for loop in the inner map? 
+    return paths.map((component) => (
+        // switch to flatmap since 
+        component.flatMap((path) => {
+        // extracts the stroke
         const svgAtt = new svgPathProperties(path);
         const points: pointsVal[] = [];
         const totalLength = svgAtt.getTotalLength();
@@ -30,8 +32,8 @@ export const normalize_model = (svg: StrokeComponent[], numPoints: number = 100)
                 y: Math.round(point.y * 100) / 100
             });
         }
+        return points;
         })
-
     ));
 }
 

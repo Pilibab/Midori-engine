@@ -18,8 +18,12 @@ export interface StrokeComponent {
     original: string | null
     strokes: Stroke[]
 }
+// points for stroke 
+export type StrokePoint = Point[]; 
 
-export interface pointsVal {
-    x: number;
-    y: number;
-}
+// group of stroke 
+export type ComponentPoint = Point[][]
+
+// group of component
+export type KanjiePoint = Point[][][] 
+

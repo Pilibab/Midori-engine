@@ -2,6 +2,7 @@ import type { pointsVal, StrokeComponent } from "../types.ts";
 import { extract_svg_path } from "../helper/extract_svg_path.ts";
 
 import { svgPathProperties } from "svg-path-properties";
+import { Component } from "react";
 
 
 export const normalize_model = (svg: StrokeComponent[], numPoints: number = 100) => {
@@ -10,8 +11,9 @@ export const normalize_model = (svg: StrokeComponent[], numPoints: number = 100)
     // think of using points to graph something
     const paths = extract_svg_path(svg);
 
-    return paths.map((path, _) => {
-        // extracts the stroke
+    return paths.map((component, _) => (
+        component.map((path, _) => {
+                    // extracts the stroke
         const svgAtt = new svgPathProperties(path);
         const points: pointsVal[] = [];
         const totalLength = svgAtt.getTotalLength();
@@ -28,6 +30,8 @@ export const normalize_model = (svg: StrokeComponent[], numPoints: number = 100)
                 y: Math.round(point.y * 100) / 100
             });
         }
-    });
+        })
+
+    ));
 }
 

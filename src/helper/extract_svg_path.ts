@@ -1,13 +1,13 @@
+import { sampleDataKanji } from "../test-data/sample-kanji.ts"
 import type { StrokeComponent } from "../types.ts"
 
 export const extract_svg_path = (svg: StrokeComponent[]) => {
-    const strokeStr = svg.map((data, _)=>{
+    // returns an array of svg path
+    // e.g [['M14,24...], ['M55.77,23.08c1.07,...]]
+    return svg.map((data, _)=>{
 
         return data.strokes.map((stroke, _)=> {
             return stroke.path 
         })
     })
-
-    // fatten the stroke to 1 array
-    return strokeStr.flat()
 } 

@@ -1,11 +1,13 @@
-import type { pointsVal } from "../types.ts";
-
+// Inside src/math/stroke_scale.ts
+import { isComponent } from "@/helper"; 
+import { ComponentPoint, Point, StrokePoint  } from "@/types";
 
 // 
-const stroke_scale = (first_stroke: pointsVal[], model_stroke:  pointsVal[]) => {
+const stroke_scale = (first_stroke: StrokePoint, model_stroke:  StrokePoint) => {
 
-    const model_first_stroke = model_stroke[0];
+    // const model_first_stroke :  StrokePoint = model_stroke[0];
 
+    // const s_canvas = ratio(calculate_Distance(model_first_stroke), calculate_Distance(model_stroke))
 } 
 
 const calculate_scale = () => {
@@ -18,23 +20,29 @@ const ratio = (x: number, y: number) => {
     return x / y;
 }
 
-const calculate_Distance = (stroke:  pointsVal[]) => {
+const resolve_stroke_distance = (strokes:  StrokePoint | ComponentPoint) => {
     let totalDistance = 0.0;
-    let prevPoint: pointsVal | null =  null;
-    let stroke_component: pointsVal[] | null  = null;
 
     // check if array is multi dimentional 
-    if (stroke && stroke.length > 0 && Array.isArray(stroke[0])) {
+    if (isComponent(strokes)) {
         // if true we flatten because we are getting the entire distance of the component
         // summation ( l_component_1, l_component_2, l_component_3, ..., l_component_n )
-        stroke_component = stroke.flat();
+        strokes.map((stroke) => {
+            totalDistance += calculate_Distance(stroke)
+        });
     } else {
-        stroke_component = stroke;
+        // point is in 1d 
+        totalDistance = calculate_Distance(strokes);
     }
+}
 
-    stroke_component.forEach((point_instance) => {
+const calculate_Distance = (stroke:  StrokePoint ) => {
+    let totalDistance = 0.0;
+    let prevPoint: Point | null =  null;
 
-        const{ x: current_x, y: current_y}= point_instance; 
+    stroke.forEach((point_instance) => {
+
+        const{ x: current_x, y: current_y} = point_instance; 
         // if prev is null means first point 
         // set it as (0,0)
         if  (prevPoint === null) {
@@ -48,7 +56,7 @@ const calculate_Distance = (stroke:  pointsVal[]) => {
         const delta_x = current_x - prevPoint.x;
         const delta_y = current_y - prevPoint.y;
 
-        totalDistance += (delta_x ** 2) + (delta_y ** 2);
+        totalDistance += Math.sqrt((delta_x ** 2) + (delta_y ** 2));
     })
 
     return totalDistance

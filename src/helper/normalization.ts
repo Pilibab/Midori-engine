@@ -1,7 +1,7 @@
 // this file is for setting the first point of the stroke as the origin so that both stroke will have the same starting point 
-import type { pointsVal } from "../types.ts";
+import type { StrokePoint } from "../types.ts";
 
-const set_origin = (points: pointsVal[]) => {
+export const shift_point = (points: StrokePoint) => {
     // if points is singular return 
     if (points.length == 0) return 
 
@@ -20,4 +20,3 @@ const set_origin = (points: pointsVal[]) => {
     return shiftedPoints;
 } 
 
-export default set_origin;

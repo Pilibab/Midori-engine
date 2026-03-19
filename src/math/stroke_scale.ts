@@ -49,14 +49,14 @@ const calculate_Distance = (stroke:  StrokePoint ) => {
             prevPoint = {
                 x: 0, y: 0 
             }
-        }   else {
-            prevPoint = point_instance;
-        }
-
+        }   
+        
         const delta_x = current_x - prevPoint.x;
         const delta_y = current_y - prevPoint.y;
 
         totalDistance += Math.sqrt((delta_x ** 2) + (delta_y ** 2));
+
+        prevPoint = point_instance;
     })
 
     return totalDistance

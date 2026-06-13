@@ -1,22 +1,25 @@
 // example/App.tsx
 import { useEffect, useRef } from 'react';
 import { MidoriEngine } from '../src/index'; // Adjust path based on your vite config
-import { normalize_model } from '../src/math/normalize_svg_model.ts';
 import { sampleDataKanji } from '../src/test-data/sample-kanji.ts';
+import { generate_point_interpolations } from '@/helper/svg-parser.ts';
 interface pointsVal {
     x: number;
     y: number;
 }
-const displayDots = (points: pointsVal[], ctx: CanvasRenderingContext2D | null) => {
+const displayDots = (kanji_pts: pointsVal[][], ctx: CanvasRenderingContext2D | null) => {
   if (!ctx) return;
 
   ctx.fillStyle = 'red';
   
-  points.forEach(point => {
-    ctx.beginPath();
-    // Use a small radius so you can see the individual samples
-    ctx.arc(point.x, point.y, 1, 0, Math.PI * 2);
-    ctx.fill();
+  kanji_pts.forEach(stroke_pts => {
+
+    stroke_pts.forEach(pts => {
+      ctx.beginPath();
+      // Use a small radius so you can see the individual samples
+      ctx.arc(pts.x, pts.y, 1, 0, Math.PI * 2);
+      ctx.fill();
+    });
   });
 
 }
@@ -24,7 +27,7 @@ function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<MidoriEngine | null>(null);
 
-  const points = normalize_model(sampleDataKanji.stroke_components);
+  const points = generate_point_interpolations(sampleDataKanji.stroke_components);
 
   console.log(points);
   

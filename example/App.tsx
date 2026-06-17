@@ -1,31 +1,22 @@
 // example/App.tsx
-import { useEffect, useRef } from 'react';
-import { MidoriEngine } from '../src/index'; // Adjust path based on your vite config
+import { useEffect, useRef, useState } from 'react';
+import { MidoriEngine, StrokeTelemetry } from '../src/index'; // Adjust path based on your vite config
 import { sampleDataKanji } from '../src/test-data/sample-kanji.ts';
-import { generate_point_interpolations } from '@/helper/svg-parser.ts';
-interface pointsVal {
-    x: number;
-    y: number;
-}
-const displayDots = (kanji_pts: pointsVal[][], ctx: CanvasRenderingContext2D | null) => {
-  if (!ctx) return;
+import { generate_point_interpolations } from '../src/helper/svg-parser.ts';
 
-  ctx.fillStyle = 'red';
-  
-  kanji_pts.forEach(stroke_pts => {
+import { displayDots } from '../src/helper/display_dots.ts';
 
-    stroke_pts.forEach(pts => {
-      ctx.beginPath();
-      // Use a small radius so you can see the individual samples
-      ctx.arc(pts.x, pts.y, 1, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  });
 
-}
+
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<MidoriEngine | null>(null);
+
+
+    // React state properties to display engine calculations to the user
+  const [scoreDisplay, setScoreDisplay] = useState<number | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string>("Draw the first stroke to begin.");
+  const [isPassing, setIsPassing] = useState<boolean | null>(null);
 
   const points = generate_point_interpolations(sampleDataKanji.stroke_components);
 
@@ -35,35 +26,61 @@ function App() {
     if (canvasRef.current && !engineRef.current) {
       const engine = new MidoriEngine(canvasRef.current);
       engine.setupHighDPI();
+      engine.setTargetModelPoints(points)
 
       // Attach a listener that React can use
-      engine.onPointAdded = (point, allPoints) => {
-        console.log("New point in React:", point);
-        // Here you could update a React state, calculate a score, etc.
+      // engine.onPointAdded = (point, allPoints) => {
+      //   console.log("New point in React:", point);
+      //   // Here you could update a React state, calculate a score, etc.
+      // };
+
+      // const canvasCtx = canvasRef.current.getContext("2d");
+      // engineRef.current = engine;
+
+      // displayDots(points, canvasCtx)
+            // Listen for when the user completes an full manual gesture sequence
+      engine.onStrokeCompleted = (result) => {
+        setScoreDisplay(result.finalScore);
+        setFeedbackMessage(result.feedback);
+        setIsPassing(result.passing);
+
+        // Re-render guidelines if a clear event wiped them
+        const canvasCtx = canvasRef.current?.getContext("2d");
+        if (canvasCtx) displayDots(points, canvasCtx);
       };
 
       const canvasCtx = canvasRef.current.getContext("2d");
       engineRef.current = engine;
-
-      displayDots(points, canvasCtx)
+      displayDots(points, canvasCtx);
     }
   }, []);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <h1>Midori Engine</h1>
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>
+      <h1>Midori Evaluation Engine</h1>
+      
+      {/* Dynamic Performance HUD Board */}
+      <div style={{ marginBottom: '20px', textAlign: 'center', minHeight: '80px' }}>
+        {scoreDisplay !== null && (
+          <h2 style={{ color: isPassing ? '#4caf50' : '#f44336', margin: '5px 0' }}>
+            Score: {scoreDisplay}% {isPassing ? '✓' : '✗'}
+          </h2>
+        )}
+        <p style={{ color: '#555', fontSize: '1.1rem' }}>{feedbackMessage}</p>
+      </div>
+
       <canvas 
         ref={canvasRef} 
         style={{ 
-          border: '1px solid black', 
-          width: '109px', // Display size
+          border: '2px solid #333', 
+          borderRadius: '8px',
+          width: '109px', 
           height: '109px', 
-          touchAction: 'none' // CRITICAL: prevents browser scrolling while drawing
+          touchAction: 'none',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          cursor: 'crosshair'
         }} 
       />
-      <div>
-
-      </div>
     </div>
   );
 }

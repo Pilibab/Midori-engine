@@ -27,3 +27,26 @@ export type ComponentPoint = Point[][]
 // group of component
 export type KanjiePoint = Point[][][] 
 
+export interface StrokeTelemetry {
+    totalFramesTracked: number;
+    greenFrames: number;
+    yellowFrames: number;
+    redFrames: number;
+    maxIndexReached: number;
+    directionViolations: number;
+    startedCorrectly: boolean;
+}
+
+/**
+ * Initializes a fresh telemetry bucket when a stroke begins.
+ */
+export interface pointsVal {
+    x: number;
+    y: number;
+}
+
+export interface LiveEvaluationResult {
+    color: "green" | "yellow" | "red";
+    closestIndex: number;
+    error: "WRONG_START" | "BACKWARDS" | null;
+}

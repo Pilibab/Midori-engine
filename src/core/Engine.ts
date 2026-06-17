@@ -1,18 +1,34 @@
-import type { Point, StrokeComponent } from "../types.ts";
+import type { Point, StrokeComponent, StrokeTelemetry } from "../types.ts";
+import { 
+    createInitialTelemetry, 
+    updateTelemetry, 
+    calculateFinalStrokeScore,
+    evaluateLivePoint
+} from "../math/stroke_eval.ts";
 
 export class MidoriEngine {
     // provides a way to manipulate the properties and method of canvas 
     private canvas: HTMLCanvasElement;
-
     //  provides the 2D rendering context for the drawing surface of a <canvas> element
     private ctx: CanvasRenderingContext2D;
-
     private isDrawing : boolean = false; 
 
     // stores the stroke being drawn by user to perform comparison
     private currentStroke: Point[] = [];
     private anchor: Point | null = null;
-    private svgMOdel: StrokeComponent | null = null; 
+
+
+    // Matrix Telemetry Tracking Properties
+    private interpolatedModelPoints: Point[][] = []; 
+    private activeStrokeIndex: number = 0;
+    private currentTelemetry: StrokeTelemetry | null = null;
+    private maxIndexReached: number = 0;
+    private frameCount: number = 0;
+    // React Callbacks
+    public onPointAdded?: (point: Point, allPoints: Point[]) => void;
+    public onStrokeCompleted?: (result: { finalScore: number; passing: boolean; feedback: string }) => void;
+
+    // private svgMOdel: StrokeComponent | null = null; 
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -21,56 +37,74 @@ export class MidoriEngine {
         this.init();
     }
 
-    public onPointAdded?: (point: Point, allPoints: Point[]) => void;
-
     private init() {
         this.canvas.addEventListener("pointerdown", (e) => this.startDrawing(e));
         this.canvas.addEventListener("pointermove", (e) => this.draw(e));
         window.addEventListener("pointerup", () => this.stopDrawing());
+
+        // Standard high-quality brush properties
+        this.ctx.lineCap = "round";
+        this.ctx.lineJoin = "round";
+        this.ctx.lineWidth = 4;
     }
 
     private startDrawing(e : PointerEvent) {
+        // Guard check: Ensure a model is loaded and we aren't out of strokes
+        if (this.interpolatedModelPoints.length === 0 || this.activeStrokeIndex >= this.interpolatedModelPoints.length) return;
+
         this.isDrawing = true;
         const coords= this.getCoords(e);        
 
-        // if we havent set anchor 
         this.ctx.beginPath();
         this.ctx.moveTo(coords.x, coords.y);
 
         this.currentStroke = [coords];
-
         this.anchor = coords;
+
+        // Reset Telemetry Tracking for the new stroke attempt
+        this.currentTelemetry = createInitialTelemetry();
+        this.maxIndexReached = 0;
+        this.frameCount = 0;
     }
 
     private draw (e : PointerEvent) {
-        if (!this.isDrawing || !this.anchor) return;
+        if (!this.isDrawing || !this.anchor || !this.currentTelemetry) return;
 
         const currentPoint = this.getCoords(e);
 
         // ADD TO DATA STREAM
         this.currentStroke.push(currentPoint);
+        this.frameCount++;
 
-        // Call the callback if it exists
-        if (this.onPointAdded) {
-            this.onPointAdded(currentPoint, this.currentStroke);
+        // Get the specific stroke target the user is supposed to be drawing
+        const targetStrokeTemplate = this.interpolatedModelPoints[this.activeStrokeIndex];
+
+        // MATH EVALUATION ENGINE RUNS HERE
+        const isFirstFrames = this.frameCount <= 5;
+        const evaluation = evaluateLivePoint(
+            currentPoint, 
+            targetStrokeTemplate, 
+            this.maxIndexReached, 
+            isFirstFrames
+        );
+        
+        // Update active thresholds
+        if (evaluation.closestIndex > this.maxIndexReached) {
+            this.maxIndexReached = evaluation.closestIndex;
         }
-        
 
-        // Store the point relative to the anchor 
-        // will be used to calculate the speed 
-        const relativePoint: Point = {
-            x: currentPoint.x - this.anchor.x,
-            y: currentPoint.y - this.anchor.y,
-            pressure: currentPoint.pressure,
-            timestamp: currentPoint.timestamp
-        };
-        
+        // Stream frame data into the telemetry bucket
+        this.currentTelemetry = updateTelemetry(this.currentTelemetry, evaluation);
 
-        // todo: this is where math is added 
-
-
-        // todo: logic for changing style based on color
-
+        // // todo: logic for changing style based on color
+        // Shift context stroke color instantly based on real-time vector alignment
+        if (evaluation.color === "green") {
+            this.ctx.strokeStyle = "#4caf50"; // Emerald Green
+        } else if (evaluation.color === "yellow") {
+            this.ctx.strokeStyle = "#ffeb3b"; // Amber Yellow
+        } else {
+            this.ctx.strokeStyle = "#f44336"; // Coral Red
+        }
 
         // Draw the segment from the LAST point (anchor) to the CURRENT point
         this.ctx.beginPath();
@@ -79,6 +113,10 @@ export class MidoriEngine {
         this.ctx.stroke();
 
 
+        // Call the callback if it exists
+        if (this.onPointAdded) {
+            this.onPointAdded(currentPoint, this.currentStroke);
+        }
         // Append to your current stroke collection
         // Note: You'll need a way to track the current active stroke!
         
@@ -88,6 +126,35 @@ export class MidoriEngine {
 
     private stopDrawing() {
         this.isDrawing = false;
+
+                const targetStrokeTemplate = this.interpolatedModelPoints[this.activeStrokeIndex];
+
+        if (this.currentTelemetry && targetStrokeTemplate) {
+            // 3. MACRO EVALUATION RUNS HERE ON PEN-UP
+            const evaluationResult = calculateFinalStrokeScore(this.currentTelemetry, targetStrokeTemplate);
+
+            // Notify React view layer of performance metrics
+            if (this.onStrokeCompleted) {
+                this.onStrokeCompleted(evaluationResult);
+            }
+
+            // If the user performed well enough, unlock and increment to the next stroke path
+            if (evaluationResult.passing) {
+                this.activeStrokeIndex++;
+            } else {
+                // Optional: Clear or reset the failed drawn path from canvas so they can try again
+                this.clearCanvasAndRedrawTemplate();
+            }
+        }
+
+        this.currentTelemetry = null;
+        this.anchor = null;
+    }
+
+    private clearCanvasAndRedrawTemplate() {
+        // Basic canvas clearing strategy. In a real build, you would trigger
+        // a canvas reload or push an event back up to React to call displayDots again.
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
     private getCoords(e : PointerEvent) : Point {
@@ -157,14 +224,15 @@ export class MidoriEngine {
         // to fill the screen, which makes the image blurry.
         // Instead of enlarging the buttons, we increase the number of buttons (pixels) in the canvas 
         // so each screen pixel can display a real pixel from the buffer.
+
+        // Re-apply styles after buffer resolution shifts]
+        this.ctx.lineCap = "round";
+        this.ctx.lineJoin = "round";
+        this.ctx.lineWidth = 4;
     }
 
-    public setTargetModel(model : StrokeComponent){
-        /**
-         * recieves an svg path that will be used to compare the users stroke 
-         */
-
-        // save the svg model to local variable 
-        this.svgMOdel = model;
+    public setTargetModelPoints(points: Point[][]) {
+        this.interpolatedModelPoints = points;
+        this.activeStrokeIndex = 0; // Reset level progress
     }
 }

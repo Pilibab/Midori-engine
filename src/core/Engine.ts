@@ -95,17 +95,8 @@ export class MidoriEngine {
 
         // Stream frame data into the telemetry bucket
         this.currentTelemetry = updateTelemetry(this.currentTelemetry, evaluation);
-
-        // // todo: logic for changing style based on color
-        // Shift context stroke color instantly based on real-time vector alignment
-        if (evaluation.color === "green") {
-            this.ctx.strokeStyle = "#4caf50"; // Emerald Green
-        } else if (evaluation.color === "yellow") {
-            this.ctx.strokeStyle = "#ffeb3b"; // Amber Yellow
-        } else {
-            this.ctx.strokeStyle = "#f44336"; // Coral Red
-        }
-
+        // dynamic coloring for each point 
+        this.ctx.strokeStyle = evaluation.color
         // Draw the segment from the LAST point (anchor) to the CURRENT point
         this.ctx.beginPath();
         this.ctx.moveTo(this.anchor.x, this.anchor.y);

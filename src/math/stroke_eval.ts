@@ -16,7 +16,7 @@ export const createInitialTelemetry = (): StrokeTelemetry => ({
  */
 export const updateTelemetry = (
     currentTelemetry: StrokeTelemetry,
-    evaluation: { color: "green" | "yellow" | "red"; closestIndex: number; error: string | null }
+    evaluation: { color: string; closestIndex: number; error: string | null }
 ): StrokeTelemetry => {
     const updated = { ...currentTelemetry };
     
@@ -112,11 +112,9 @@ export const evaluateLivePoint = (
     let minDistance = Infinity;
     let closestIndex = 0;
 
-    // --- PHASE 1: EUCLIDEAN PROXIMITY SEARCH ---
     // Scan the template timeline to find the point closest to the user's cursor
     for (let i = 0; i < templateStroke.length; i++) {
         const templatePoint = templateStroke[i];
-        
         // Compute standard Euclidean distance: d = sqrt((x2-x1)^2 + (y2-y1)^2)
         const dx = userPoint.x - templatePoint.x;
         const dy = userPoint.y - templatePoint.y;
@@ -128,50 +126,33 @@ export const evaluateLivePoint = (
         }
     }
 
-    // --- PHASE 2: POSITION AND DIRECTION GATEKEEPING ---
+    const HARD_RED = "rgba(255, 0, 0, 1)";
 
-    // Rule A: Wrong Start Position
-    // If it's one of the first few frames, the cursor must be near the beginning of the timeline (index 0).
-    // If they touch down further along the line (e.g., past index 12), flag an error.
-    const START_INDEX_THRESHOLD = 12; 
-    if (isFirstFrames && closestIndex > START_INDEX_THRESHOLD) {
-        return {
-            color: "red",
-            closestIndex,
-            error: "WRONG_START"
-        };
+    if (isFirstFrames && closestIndex > 12) {
+        console.log("WRONG_START");
+        return { color: HARD_RED, closestIndex, error: "WRONG_START" };
     }
 
-    // Rule B: Directional Timeline Validation (The Key to Overcoming the Field Defect)
-    // Hand-shaking and micro-jitters are normal, so we allow a padding threshold (e.g., 10 points).
-    // But if their closest matched index falls significantly behind their historical maximum,
-    // they are physically drawing the stroke in reverse.
-    const BACKWARDS_PADDING = 10;
-    if (closestIndex < maxIndexReached - BACKWARDS_PADDING) {
-        return {
-            color: "red",
-            closestIndex,
-            error: "BACKWARDS"
-        };
+    if (closestIndex < maxIndexReached - 10) {
+        console.log("BACKWARDS");
+        return { color: HARD_RED, closestIndex, error: "BACKWARDS" };
     }
 
-    // --- PHASE 3: DYNAMIC COLOR DISTANCE THRESHOLDS ---
-    // Establish absolute tracking tolerances in pixels
-    const GREEN_TOLERANCE = 16;  // Within 16px: Highly accurate tracking
-    const YELLOW_TOLERANCE = 36; // Within 36px: Out of balance, needs adjustment
+    // --- PHASE 3: DYNAMIC EXPONENTIAL GRADIENT ---
+    const MAX_TOLERANCE = 36; // Beyond 36px is pure red
+    
+    // 1. Normalize the distance into a 0.0 to 1.0 ratio
+    const linearRatio = Math.min(minDistance / MAX_TOLERANCE, 1.0);
+    
+    // 2. Apply an exponential power curve (Exponent > 1 creates a forgiveness cushion)
+    const exponentialRatio = Math.pow(linearRatio, 1.5); 
 
-    let color: "green" | "yellow" | "red" = "green";
-
-    if (minDistance <= GREEN_TOLERANCE) {
-        color = "green";
-    } else if (minDistance <= YELLOW_TOLERANCE) {
-        color = "yellow";
-    } else {
-        color = "red"; // Way off track
-    }
+    // 3. Map to Hue spectrum (120 down to 0)
+    const hue = Math.round(120 * (1 - exponentialRatio));
+    const dynamicColor = `hsla(${hue}, 100%, 45%, 1)`;
 
     return {
-        color,
+        color: dynamicColor,
         closestIndex,
         error: null
     };

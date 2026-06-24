@@ -46,7 +46,7 @@ export interface pointsVal {
 }
 
 export interface LiveEvaluationResult {
-    color: "green" | "yellow" | "red";
+    color: string;
     closestIndex: number;
     error: "WRONG_START" | "BACKWARDS" | null;
 }

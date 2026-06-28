@@ -19,7 +19,7 @@ export class MidoriEngine {
 
 
     // Matrix Telemetry Tracking Properties
-    private interpolatedModelPoints: Point[][] = []; 
+    public interpolatedModelPoints: Point[][] = [];             // ! public to access shifted points 
     private activeStrokeIndex: number = 0;
     private currentTelemetry: StrokeTelemetry | null = null;
     private maxIndexReached: number = 0;
@@ -223,7 +223,69 @@ export class MidoriEngine {
     }
 
     public setTargetModelPoints(points: Point[][]) {
-        this.interpolatedModelPoints = points;
+        if (points.length === 0 || points[0].length === 0) return;
+
+        // FETCH CANVAS LAYOUT (CSS) SIZE - Matches getCoords()
+        const canvasW = this.canvas.clientWidth;
+        const canvasH = this.canvas.clientHeight;
+
+        console.log("canvas size:", canvasW, canvasH);
+        
+        // FIND THE BOUNDING BOX OF THE INCOMING MODEL
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+
+        // FIND THE BOUNDS
+        points.forEach(stroke => {
+            stroke.forEach(pt => {
+                if (pt.x < minX) minX = pt.x;
+                if (pt.x > maxX) maxX = pt.x;
+                if (pt.y < minY) minY = pt.y;
+                if (pt.y > maxY) maxY = pt.y;
+            });
+        });
+
+        console.log("Bounds size:", minX, minY);
+
+        // SET BOUND DISTANCE
+        const modelW = maxX - minX;
+        const modelH = maxY - minY;
+        console.log("Bound model size:", modelW, modelH);
+        
+        // set margin
+        const PADDING_FACTOR = 0.85; 
+        const scaleX = (canvasW / modelW) * PADDING_FACTOR;
+        const scaleY = (canvasH / modelH) * PADDING_FACTOR;
+        // Use Math.min to maintain the traditional aspect ratio of the Kanji
+        const uniformScale = Math.min(scaleX, scaleY);
+
+        // CALCULATE OFFSETS TO CENTER THE CHARACTER
+        const scaledModelW = modelW * uniformScale;
+        const scaledModelH = modelH * uniformScale;
+        const offsetX = (canvasW - scaledModelW) / 2;
+        const offsetY = (canvasH - scaledModelH) / 2;
+        
+        console.log("offset:", offsetX, offsetY);
+        console.log("scale:", scaledModelW, scaledModelH);
+
+        console.log("sample:", points[0][0]);
+        
+        this.interpolatedModelPoints  = points.map((stroke) => {
+            return stroke.map((pt) => {
+                
+                return {
+                ...pt,
+                // Shift point to origin, apply uniform scale, center on canvas
+                x: (pt.x - minX) * uniformScale + offsetX,
+                y: (pt.y - minY) * uniformScale + offsetY
+            };
+            })
+        })
+        console.log("shifted", this.interpolatedModelPoints[0].slice(1,5));
+        console.log("original", points[0].slice(1,5));
+        
+        console.log("points scaled");
+        
         this.activeStrokeIndex = 0; // Reset level progress
     }
 }

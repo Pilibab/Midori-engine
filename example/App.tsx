@@ -18,9 +18,10 @@ function App() {
   const [feedbackMessage, setFeedbackMessage] = useState<string>("Draw the first stroke to begin.");
   const [isPassing, setIsPassing] = useState<boolean | null>(null);
 
+  // converts stroke to pts 
   const points = generate_point_interpolations(sampleDataKanji.stroke_components);
 
-  console.log(points);
+  // console.log(points);
   
   useEffect(() => {
     if (canvasRef.current && !engineRef.current) {
@@ -51,7 +52,7 @@ function App() {
 
       const canvasCtx = canvasRef.current.getContext("2d");
       engineRef.current = engine;
-      displayDots(points, canvasCtx);
+      displayDots(engine.interpolatedModelPoints, canvasCtx);
     }
   }, []);
 
@@ -74,8 +75,8 @@ function App() {
         style={{ 
           border: '2px solid #333', 
           borderRadius: '8px',
-          width: '109px', 
-          height: '109px', 
+          width: '209px', 
+          height: '209px', 
           touchAction: 'none',
           boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
           cursor: 'crosshair'

@@ -25,7 +25,7 @@ export type StrokePoint = Point[];
 export type ComponentPoint = Point[][]
 
 // group of component
-export type KanjiePoint = Point[][][] 
+export type KanjiePoint = Point[][]
 
 export interface StrokeTelemetry {
     totalFramesTracked: number;

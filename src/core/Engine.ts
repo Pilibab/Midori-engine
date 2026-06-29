@@ -1,4 +1,4 @@
-import type { Point, StrokeComponent, StrokeTelemetry } from "../types.ts";
+import type { KanjiePoint, Point, StrokePoint, StrokeTelemetry } from "../types.ts";
 import { 
     createInitialTelemetry, 
     updateTelemetry, 
@@ -14,21 +14,21 @@ export class MidoriEngine {
     private isDrawing : boolean = false; 
 
     // stores the stroke being drawn by user to perform comparison
-    private currentStroke: Point[] = [];
-    private anchor: Point | null = null;
+    private currentStroke: StrokePoint = [];
+    private anchor: Point | null = null;                            // ? what is this anchor for 
 
+    // stores the strokes of the full kanji made by the user 
+    public StrokePersistencePoint : KanjiePoint = []
 
     // Matrix Telemetry Tracking Properties
-    public interpolatedModelPoints: Point[][] = [];             // ! public to access shifted points 
-    private activeStrokeIndex: number = 0;
+    public interpolatedModelPoints: KanjiePoint = [];               // ! public to access shifted points 
+    private activeStrokeIndex: number = 0;                          // ! tracks which stroke is being tested 
     private currentTelemetry: StrokeTelemetry | null = null;
     private maxIndexReached: number = 0;
     private frameCount: number = 0;
     // React Callbacks
-    public onPointAdded?: (point: Point, allPoints: Point[]) => void;
+    public onPointAdded?: (point: Point, allPoints: StrokePoint) => void;
     public onStrokeCompleted?: (result: { finalScore: number; passing: boolean; feedback: string }) => void;
-
-    // private svgMOdel: StrokeComponent | null = null; 
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -95,6 +95,7 @@ export class MidoriEngine {
 
         // Stream frame data into the telemetry bucket
         this.currentTelemetry = updateTelemetry(this.currentTelemetry, evaluation);
+        
         // dynamic coloring for each point 
         this.ctx.strokeStyle = evaluation.color
         // Draw the segment from the LAST point (anchor) to the CURRENT point
@@ -123,7 +124,10 @@ export class MidoriEngine {
         if (this.currentTelemetry && targetStrokeTemplate) {
             // 3. MACRO EVALUATION RUNS HERE ON PEN-UP
             const evaluationResult = calculateFinalStrokeScore(this.currentTelemetry, targetStrokeTemplate);
-
+            console.log("score", evaluationResult);
+            console.log("telemetry", this.currentTelemetry);
+            console.log("target", targetStrokeTemplate);
+            
             // Notify React view layer of performance metrics
             if (this.onStrokeCompleted) {
                 this.onStrokeCompleted(evaluationResult);
@@ -138,6 +142,7 @@ export class MidoriEngine {
             }
         }
 
+        this.StrokePersistencePoint.push(this.currentStroke)
         this.currentTelemetry = null;
         this.anchor = null;
     }
@@ -222,7 +227,7 @@ export class MidoriEngine {
         this.ctx.lineWidth = 4;
     }
 
-    public setTargetModelPoints(points: Point[][]) {
+    public setTargetModelPoints(points: KanjiePoint) {
         if (points.length === 0 || points[0].length === 0) return;
 
         // FETCH CANVAS LAYOUT (CSS) SIZE - Matches getCoords()

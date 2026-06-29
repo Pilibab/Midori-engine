@@ -11,17 +11,12 @@ import { displayDots } from '../src/helper/display_dots.ts';
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<MidoriEngine | null>(null);
-
-
     // React state properties to display engine calculations to the user
   const [scoreDisplay, setScoreDisplay] = useState<number | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState<string>("Draw the first stroke to begin.");
   const [isPassing, setIsPassing] = useState<boolean | null>(null);
-
   // converts stroke to pts 
   const points = generate_point_interpolations(sampleDataKanji.stroke_components);
-
-  // console.log(points);
   
   useEffect(() => {
     if (canvasRef.current && !engineRef.current) {
@@ -29,17 +24,7 @@ function App() {
       engine.setupHighDPI();
       engine.setTargetModelPoints(points)
 
-      // Attach a listener that React can use
-      // engine.onPointAdded = (point, allPoints) => {
-      //   console.log("New point in React:", point);
-      //   // Here you could update a React state, calculate a score, etc.
-      // };
-
-      // const canvasCtx = canvasRef.current.getContext("2d");
-      // engineRef.current = engine;
-
-      // displayDots(points, canvasCtx)
-            // Listen for when the user completes an full manual gesture sequence
+      // Listen for when the user completes an full manual gesture sequence
       engine.onStrokeCompleted = (result) => {
         setScoreDisplay(result.finalScore);
         setFeedbackMessage(result.feedback);

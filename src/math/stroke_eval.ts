@@ -16,8 +16,11 @@ export const createInitialTelemetry = (): StrokeTelemetry => ({
  */
 export const updateTelemetry = (
     currentTelemetry: StrokeTelemetry,
-    evaluation: { color: string; closestIndex: number; error: string | null }
+    evaluation: { color: string; closestIndex: number; error: string | null },
+
 ): StrokeTelemetry => {
+
+
     const updated = { ...currentTelemetry };
     
     updated.totalFramesTracked += 1;
@@ -105,15 +108,21 @@ export const calculateFinalStrokeScore = (
  */
 export const evaluateLivePoint = (
     userPoint: Point,
-    templateStroke: Point[],
-    maxIndexReached: number,
-    isFirstFrames: boolean
+    templateStroke: Point[],        
+    maxIndexReached: number,        // previous index
+    isFirstFrames: boolean, 
+    forwardTolerance: number = 25, 
+    backwardTolerance: number = 5
 ): LiveEvaluationResult => {
     let minDistance = Infinity;
     let closestIndex = 0;
+    const modelSize = templateStroke.length;
 
+    // set bounds 
+    let min = (maxIndexReached <= backwardTolerance) ? 0 : maxIndexReached - backwardTolerance;
+    let max = (maxIndexReached >= modelSize - forwardTolerance) ? modelSize: maxIndexReached + forwardTolerance;  
     // Scan the template timeline to find the point closest to the user's cursor
-    for (let i = 0; i < templateStroke.length; i++) {
+    for (let i = min; i < max; i++) {
         const templatePoint = templateStroke[i];
         // Compute standard Euclidean distance: d = sqrt((x2-x1)^2 + (y2-y1)^2)
         const dx = userPoint.x - templatePoint.x;

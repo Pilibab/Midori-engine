@@ -110,7 +110,8 @@ export const evaluateLivePoint = (
     maxIndexReached: number,        // previous index
     isFirstFrames: boolean, 
     forwardTolerance: number = 25, 
-    backwardTolerance: number = 5
+    backwardTolerance: number = 5, 
+    distanceTolerance: number = 10
 ): LiveEvaluationResult => {
     let minDistance = Infinity;
     let closestIndex = 0;
@@ -144,12 +145,9 @@ export const evaluateLivePoint = (
         console.log("BACKWARDS");
         return { color: HARD_RED, frameScore:-25, closestIndex, error: "BACKWARDS" };
     }
-
-    // DYNAMIC EXPONENTIAL GRADIENT ---
-    const MAX_TOLERANCE = 36; // Beyond 36px is pure red
     
     // Normalize the distance into a 0.0 to 1.0 ratio
-    const linearRatio = Math.min(minDistance / MAX_TOLERANCE, 1.0);
+    const linearRatio = Math.min(minDistance / distanceTolerance, 1.0);
     
     // Apply an exponential power curve (Exponent > 1 creates a forgiveness cushion)
     const exponentialRatio = Math.pow(linearRatio, 1.5); 

@@ -32,7 +32,7 @@ function App() {
 
         // Re-render guidelines if a clear event wiped them
         const canvasCtx = canvasRef.current?.getContext("2d");
-        if (canvasCtx) displayDots(points, canvasCtx);
+        // if (canvasCtx) displayDots(points, canvasCtx);
       };
 
       const canvasCtx = canvasRef.current.getContext("2d");

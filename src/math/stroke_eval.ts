@@ -3,8 +3,7 @@ import { LiveEvaluationResult, Point, StrokePoint, StrokeTelemetry } from "@/typ
 
 export const createInitialTelemetry = (): StrokeTelemetry => ({
     totalFramesTracked: 0,
-    greenFrames: 0,
-    yellowFrames: 0,
+    cummulativeScores: 0,
     redFrames: 0,
     maxIndexReached: 0,
     directionViolations: 0,
@@ -16,8 +15,7 @@ export const createInitialTelemetry = (): StrokeTelemetry => ({
  */
 export const updateTelemetry = (
     currentTelemetry: StrokeTelemetry,
-    evaluation: { color: string; closestIndex: number; error: string | null },
-
+    evaluation: LiveEvaluationResult
 ): StrokeTelemetry => {
 
 
@@ -43,11 +41,10 @@ export const updateTelemetry = (
         return updated;
     }
 
-    // Process proximity colors
-    if (evaluation.color === "green") updated.greenFrames += 1;
-    else if (evaluation.color === "yellow") updated.yellowFrames += 1;
-    else updated.redFrames += 1;
-
+    // Accumulate continuous frame score for valid streams
+    if (evaluation.frameScore !== undefined) {
+        updated.cummulativeScores += evaluation.frameScore;
+    }
     return updated;
 };
 
@@ -62,9 +59,10 @@ export const calculateFinalStrokeScore = (
         return { finalScore: 0, passing: false, feedback: "No stroke detected." };
     }
 
-    // 1. Calculate foundational precision score
-    const weightedFrames = (telemetry.greenFrames * 1.0) + (telemetry.yellowFrames * 0.5);
-    let score = (weightedFrames / telemetry.totalFramesTracked) * 100;
+    // Calculate foundational precision score using true frame averages
+    // Exclude strict error frames from the average calculation if they don't produce frameScores
+    const validFrames = telemetry.totalFramesTracked - telemetry.redFrames;
+    let score = validFrames > 0 ? (telemetry.cummulativeScores / validFrames) : 0;
 
     // 2. Evaluate Completeness (Did they draw the full length of the path timeline?)
     const completionRatio = telemetry.maxIndexReached / (templateStroke.length - 1);
@@ -139,29 +137,32 @@ export const evaluateLivePoint = (
 
     if (isFirstFrames && closestIndex > 12) {
         console.log("WRONG_START");
-        return { color: HARD_RED, closestIndex, error: "WRONG_START" };
+        return { color: HARD_RED, frameScore:-25, closestIndex, error: "WRONG_START" };
     }
 
     if (closestIndex < maxIndexReached - 10) {
         console.log("BACKWARDS");
-        return { color: HARD_RED, closestIndex, error: "BACKWARDS" };
+        return { color: HARD_RED, frameScore:-25, closestIndex, error: "BACKWARDS" };
     }
 
-    // --- PHASE 3: DYNAMIC EXPONENTIAL GRADIENT ---
+    // DYNAMIC EXPONENTIAL GRADIENT ---
     const MAX_TOLERANCE = 36; // Beyond 36px is pure red
     
-    // 1. Normalize the distance into a 0.0 to 1.0 ratio
+    // Normalize the distance into a 0.0 to 1.0 ratio
     const linearRatio = Math.min(minDistance / MAX_TOLERANCE, 1.0);
     
-    // 2. Apply an exponential power curve (Exponent > 1 creates a forgiveness cushion)
+    // Apply an exponential power curve (Exponent > 1 creates a forgiveness cushion)
     const exponentialRatio = Math.pow(linearRatio, 1.5); 
-
-    // 3. Map to Hue spectrum (120 down to 0)
-    const hue = Math.round(120 * (1 - exponentialRatio));
+    const normalized_score = 1 - exponentialRatio;
+    // Map to Hue spectrum (120 down to 0)
+    const hue = Math.round(120 * normalized_score);
     const dynamicColor = `hsla(${hue}, 100%, 45%, 1)`;
+
+    const frameScore = normalized_score * 100
 
     return {
         color: dynamicColor,
+        frameScore: frameScore,
         closestIndex,
         error: null
     };

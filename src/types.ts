@@ -29,8 +29,7 @@ export type KanjiePoint = Point[][]
 
 export interface StrokeTelemetry {
     totalFramesTracked: number;
-    greenFrames: number;
-    yellowFrames: number;
+    cummulativeScores: number;
     redFrames: number;
     maxIndexReached: number;
     directionViolations: number;
@@ -47,6 +46,7 @@ export interface pointsVal {
 
 export interface LiveEvaluationResult {
     color: string;
+    frameScore: number
     closestIndex: number;
     error: "WRONG_START" | "BACKWARDS" | null;
 }

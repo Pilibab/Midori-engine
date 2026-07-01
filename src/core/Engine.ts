@@ -1,10 +1,12 @@
-import type { KanjiePoint, Point, StrokePoint, StrokeTelemetry } from "../types.ts";
+import type { KanjiePoint, Point, StrokeComponent, StrokePoint, StrokeTelemetry } from "../types.ts";
 import { 
     createInitialTelemetry, 
     updateTelemetry, 
     calculateFinalStrokeScore,
     evaluateLivePoint
 } from "../math/stroke_eval.ts";
+
+import { extract_svg_path, generate_point_interpolations } from "../helper/svg-parser.ts";
 
 export class MidoriEngine {
     // provides a way to manipulate the properties and method of canvas 
@@ -17,6 +19,14 @@ export class MidoriEngine {
     private currentStroke: StrokePoint = [];
     private anchor: Point | null = null;                            // ? what is this anchor for 
 
+    // extracted svg path 
+    private svgpath : string[][] = []
+    // store transform values 
+    private minX: number = 0;
+    private minY: number = 0;
+    private uniformScale: number = 1;
+    private offsetX: number = 0;
+    private offsetY: number = 0;
     // stores the strokes of the full kanji made by the user 
     public StrokePersistencePoint : KanjiePoint = []
 
@@ -227,7 +237,12 @@ export class MidoriEngine {
         this.ctx.lineWidth = 4;
     }
 
-    public setTargetModelPoints(points: KanjiePoint) {
+
+    public setTargetModelPoints(svg: StrokeComponent[]) {
+        // save svg path to attibute 
+        this.svgpath = extract_svg_path(svg)
+
+        const points = generate_point_interpolations(svg) 
         if (points.length === 0 || points[0].length === 0) return;
 
         // FETCH CANVAS LAYOUT (CSS) SIZE - Matches getCoords()
@@ -292,5 +307,49 @@ export class MidoriEngine {
         console.log("points scaled");
         
         this.activeStrokeIndex = 0; // Reset level progress
+
+        // store info
+        this.minX = minX
+        this.minY = minY
+        this.offsetX = offsetX
+        this.offsetY = offsetY
+        this.uniformScale = uniformScale
+    }
+
+    /**
+     * display the target model for guide tracing 
+    */
+    public displayTargetModel(
+        displayFull: boolean = true,
+        opacity: number = .7,
+        color: string = "gray" 
+    ) {
+        this.ctx.save();
+        this.ctx.globalAlpha = opacity;
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 3;
+        this.ctx.lineCap = "round";
+        this.ctx.lineJoin = "round";
+
+        const strokesToDraw = displayFull
+            ? this.svgpath
+            : this.svgpath.slice(0, this.activeStrokeIndex + 1);
+
+        // Build the transform matrix ONCE per call using stored values
+        const matrix = new DOMMatrix()
+            .translate(this.offsetX, this.offsetY)
+            .scale(this.uniformScale, this.uniformScale)
+            .translate(-this.minX, -this.minY);
+
+        strokesToDraw.forEach((strokeGroup) => {
+            strokeGroup.forEach((d) => {
+                const path2d = new Path2D(d);
+                const transformed = new Path2D();
+                transformed.addPath(path2d, matrix);
+                this.ctx.stroke(transformed);
+            });
+        });
+
+        this.ctx.restore();
     }
 }

@@ -15,29 +15,23 @@ function App() {
   const [scoreDisplay, setScoreDisplay] = useState<number | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState<string>("Draw the first stroke to begin.");
   const [isPassing, setIsPassing] = useState<boolean | null>(null);
-  // converts stroke to pts 
-  const points = generate_point_interpolations(sampleDataKanji.stroke_components);
   
   useEffect(() => {
     if (canvasRef.current && !engineRef.current) {
       const engine = new MidoriEngine(canvasRef.current);
       engine.setupHighDPI();
-      engine.setTargetModelPoints(points)
+      engine.setTargetModelPoints(sampleDataKanji.stroke_components)
 
       // Listen for when the user completes an full manual gesture sequence
       engine.onStrokeCompleted = (result) => {
         setScoreDisplay(result.finalScore);
         setFeedbackMessage(result.feedback);
         setIsPassing(result.passing);
-
-        // Re-render guidelines if a clear event wiped them
-        const canvasCtx = canvasRef.current?.getContext("2d");
-        // if (canvasCtx) displayDots(points, canvasCtx);
       };
 
       const canvasCtx = canvasRef.current.getContext("2d");
       engineRef.current = engine;
-      displayDots(engine.interpolatedModelPoints, canvasCtx);
+      engine.displayTargetModel()
     }
   }, []);
 

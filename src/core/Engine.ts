@@ -341,14 +341,26 @@ export class MidoriEngine {
             .scale(this.uniformScale, this.uniformScale)
             .translate(-this.minX, -this.minY);
 
-        strokesToDraw.forEach((strokeGroup) => {
-            strokeGroup.forEach((d) => {
+        // display full 
+        if (displayFull)
+        {    
+            strokesToDraw.forEach((strokeGroup) => {
+                strokeGroup.forEach((d) => {
+                    const path2d = new Path2D(d);
+                    const transformed = new Path2D();
+                    transformed.addPath(path2d, matrix);
+                    this.ctx.stroke(transformed);
+                });
+            });
+        } else 
+        {   // display active (to be drawn stroke)
+            strokesToDraw[this.activeStrokeIndex].forEach((d)=> {
                 const path2d = new Path2D(d);
                 const transformed = new Path2D();
                 transformed.addPath(path2d, matrix);
                 this.ctx.stroke(transformed);
-            });
-        });
+            })
+        }
 
         this.ctx.restore();
     }
